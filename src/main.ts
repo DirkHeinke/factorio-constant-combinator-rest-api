@@ -19,18 +19,16 @@ app.use(function (req, res, next) {
 
 app.get("/cc/:id/signals", async (req, res) => {
   const id = req.params.id;
-  const idIsValid = /R[0-9]{2}$/.test(id);
+  const idIsValid = !isNaN(parseInt(id));
   if (!idIsValid) {
     res.status(400);
     res.send({
-      error: "Invalid ID. Must be RXX with X = 0-9",
+      error: "Invalid ID. Must be a number",
     });
     return;
   }
 
-  const result = await factorio.getSignalsFromConstantCombinatorWithId(
-    id.substring(1)
-  );
+  const result = await factorio.getSignalsFromConstantCombinatorWithId(id);
   if (result.error) {
     res.status(400);
     res.send({
@@ -44,11 +42,11 @@ app.get("/cc/:id/signals", async (req, res) => {
 
 app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
   const id = req.params.id;
-  const idIsValid = /R[0-9]{2}$/.test(id);
+  const idIsValid = !isNaN(parseInt(id));
   if (!idIsValid) {
     res.status(400);
     res.send({
-      error: "Invalid ID. Must be RXX with X = 0-9",
+      error: "Invalid ID. Must be a number",
     });
     return;
   }
@@ -99,7 +97,7 @@ app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
   }
 
   const result = await factorio.setSignalToConstantCombinatorWithId(
-    id.substring(1),
+    id,
     signalSlotValidationResponse.slot!,
     signalType,
     signalName,
@@ -117,11 +115,11 @@ app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
 
 app.delete("/cc/:id/signal/:signalSlot", async (req, res) => {
   const id = req.params.id;
-  const idIsValid = /R[0-9]{2}$/.test(id);
+  const idIsValid = !isNaN(parseInt(id));
   if (!idIsValid) {
     res.status(400);
     res.send({
-      error: "Invalid ID. Must be RXX with X = 0-9",
+      error: "Invalid ID. Must be a number",
     });
     return;
   }
@@ -138,7 +136,7 @@ app.delete("/cc/:id/signal/:signalSlot", async (req, res) => {
   }
 
   await factorio.deleteSignalToConstantCombinatorWithId(
-    id.substring(1),
+    id,
     signalSlotValidationResponse.slot!
   );
   res.send();
@@ -152,7 +150,7 @@ app
 
 function validateSignalSlot(slot: string): { error?: string; slot?: number } {
   const slotInt = parseInt(slot);
-  if (slotInt == NaN) {
+  if (isNaN(slotInt)) {
     return { error: "Slot is no integer." };
   }
 

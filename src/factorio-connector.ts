@@ -135,19 +135,15 @@ export class FactorioConnector {
 
         -- rcon.print("Number of combinators: "..table.maxn(constantCombinators))
         for key,value in ipairs(constantCombinators) do
-            local signal18 = value.get_control_behavior().get_signal(18)
-            local signal19 = value.get_control_behavior().get_signal(19)
-            local signal20 = value.get_control_behavior().get_signal(20)
-            if (signal18.signal and signal18.signal.name == "signal-R" and
-                signal19.signal and signal19.signal.name == "signal-"..string.sub(id,1,1) and
-                signal20.signal and signal20.signal.name == "signal-"..string.sub(id,2,2)
-                ) then
-                    if (lastCcWithId) then
-                        foundMultipleCC = true
-                    end
-                    
-                    lastCcWithId = value
+          local signal20 = value.get_control_behavior().get_signal(20)
+          
+          if (signal20.signal and signal20.signal.name == "signal-R" and signal20.count == tonumber(id)) then
+            if (lastCcWithId) then
+              foundMultipleCC = true
             end
+            
+            lastCcWithId = value
+          end
         end
 
         return lastCcWithId, foundMultipleCC

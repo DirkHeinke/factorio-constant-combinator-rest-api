@@ -15,7 +15,7 @@ This lets you control factorio constant combinators via a simple REST API.
 
 ## API
 
-The constant combinators are identified by the signal set in slots 18-20 and must be in the form RXX with X = 0-9.
+The constant combinators are identified by the signal R set in slot 20. In the image below you would use `/cc/995/signals`
 
 ![Constant Combinator with id R01](/doc/img/cc_r01.png)
 
