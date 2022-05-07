@@ -1,6 +1,12 @@
 import Rcon from "rcon-ts";
 import { conf } from "./settings";
 
+type Signal = {
+  signalName: string;
+  signalType: string;
+  signalCount: string;
+};
+
 export class FactorioConnector {
   private rcon: Rcon;
 
@@ -12,29 +18,46 @@ export class FactorioConnector {
     });
   }
 
-  async getConstantCombinatorWithId(id: string) {
+  async getSignalsFromConstantCombinatorWithId(id: string): Promise<{
+    error: boolean;
+    data: string | object;
+  }> {
     this.rcon.connect();
     const result = await this.rcon.send(`/sc 
         ${this.getCcWithIdLuaFunction}
         
         local cc, doubleError = getCcWithId("${id}")
-        if(doubleError) then
-            rcon.print("ERROR: Double CC-ID")
-            return
+        
+        ${this.validateGetCcResponseLuaFunction}
+        
+        local redNetwork = cc.get_control_behavior().get_circuit_network(defines.wire_type.red,defines.circuit_connector_id.constant_combinator)
+        local greenNetwork = cc.get_control_behavior().get_circuit_network(defines.wire_type.green,defines.circuit_connector_id.constant_combinator)
+
+        if (redNetwork) then
+          for key,value in ipairs(redNetwork.signals) do
+            rcon.print(value.signal.name..","..value.signal.type..","..value.count)
+          end
         end
-        if(not cc) then
-            rcon.print("ERROR: ID not found")
-            return
+        
+        rcon.print("---")
+
+        if (greenNetwork) then
+          for key,value in ipairs(greenNetwork.signals) do
+            rcon.print(value.signal.name..","..value.signal.type..","..value.count)
+          end
         end
-        rcon.print(serpent.block(cc.get_control_behavior().get_circuit_network(defines.wire_type.red,defines.circuit_connector_id.constant_combinator).signals))
         `);
-    /**
-     * TODO
-     * Ergebnisse parsen und umwandeln (Error berücksichtigen)
-     * Rot und Grün
-     */
+
+    if (result.startsWith("ERROR:")) {
+      return { error: true, data: result };
+    }
+
     this.rcon.disconnect();
-    return result;
+
+    return {
+      error: false,
+      data: this.parseSignalResponse(result),
+    };
   }
 
   async setSignalToConstantCombinatorWithId(
@@ -49,22 +72,11 @@ export class FactorioConnector {
         ${this.getCcWithIdLuaFunction}
         
         local cc, doubleError = getCcWithId("${id}")
-        if(doubleError) then
-            rcon.print("ERROR: Double CC-ID")
-            return
-        end
-        if(not cc) then
-            rcon.print("ERROR: ID not found")
-            return
-        end
+
+        ${this.validateGetCcResponseLuaFunction}
+
         cc.get_control_behavior().set_signal(${slot},{signal={type="${signalType}", name="${signalName}"}, count=${signalCount}})
         `);
-    /**
-     * TODO
-     * Ergebnisse parsen und umwandeln (Error berücksichtigen)
-     * Rot und Grün
-     */
-    console.log(result);
     this.rcon.disconnect();
     return result;
   }
@@ -75,24 +87,44 @@ export class FactorioConnector {
         ${this.getCcWithIdLuaFunction}
         
         local cc, doubleError = getCcWithId("${id}")
-        if(doubleError) then
-            rcon.print("ERROR: Double CC-ID")
-            return
-        end
-        if(not cc) then
-            rcon.print("ERROR: ID not found")
-            return
-        end
+        
+        ${this.validateGetCcResponseLuaFunction}
+        
         cc.get_control_behavior().set_signal(${slot},nil)
         `);
-    /**
-     * TODO
-     * Ergebnisse parsen und umwandeln (Error berücksichtigen)
-     * Rot und Grün
-     */
-    console.log(result);
     this.rcon.disconnect();
     return result;
+  }
+
+  private parseSignalResponse(data: string): {
+    red: Signal[];
+    green: Signal[];
+  } {
+    let [redData, greenData] = data.split("---");
+    let redSignals: Signal[] = this.stringToSignalArray(redData);
+    let greenSignals: Signal[] = this.stringToSignalArray(greenData);
+
+    return {
+      green: greenSignals,
+      red: redSignals,
+    };
+  }
+
+  private stringToSignalArray(data: string): Signal[] {
+    if (data.length > 0) {
+      return data
+        .split("\n")
+        .filter((line) => line.length > 0)
+        .flatMap((line) => {
+          const [signalName, signalType, signalCount] = line.split(",");
+          return {
+            signalName,
+            signalType,
+            signalCount,
+          };
+        });
+    }
+    return [];
   }
 
   private getCcWithIdLuaFunction = `
@@ -120,5 +152,16 @@ export class FactorioConnector {
 
         return lastCcWithId, foundMultipleCC
     end
+    `;
+
+  private validateGetCcResponseLuaFunction = `
+      if(doubleError) then
+        rcon.print("ERROR: ID used in multiple combinators")
+        return
+      end
+      if(not cc) then
+        rcon.print("ERROR: ID not found")
+        return
+      end
     `;
 }

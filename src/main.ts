@@ -19,9 +19,18 @@ app.get("/cc/:id/signals", async (req, res) => {
     return;
   }
 
-  const result = await factorio.getConstantCombinatorWithId(id.substring(1));
+  const result = await factorio.getSignalsFromConstantCombinatorWithId(
+    id.substring(1)
+  );
+  if (result.error) {
+    res.status(400);
+    res.send({
+      error: "Error from factorio: " + result.data,
+    });
+    return;
+  }
   res.contentType("json");
-  res.send(result);
+  res.send(result.data);
 });
 
 app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
@@ -80,17 +89,17 @@ app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
     return;
   }
 
-  const response = await factorio.setSignalToConstantCombinatorWithId(
+  const result = await factorio.setSignalToConstantCombinatorWithId(
     id.substring(1),
     signalSlotValidationResponse.slot!,
     signalType,
     signalName,
     signalCountInt
   );
-  if (response) {
+  if (result) {
     res.status(400);
     res.send({
-      error: "Error from factorio: " + response,
+      error: "Error from factorio: " + result,
     });
     return;
   }
