@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Factorio Remote Control</title>
+  </head>
+  <body>
+    <button onclick="callOn()">On</button>
+    <button onclick="callOff()">Off</button>
+    <button onclick="callRead()">Read Network</button>
+
+    <pre id="circuit"></pre>
+
+    <script>
+      function callOn() {
+        axios.post("http://localhost:8080/cc/R01/signal/1", {
+          signalName: "signal-red",
+          signalType: "virtual",
+          signalCount: "1",
+        });
+      }
+
+      function callOff() {
+        axios.delete("http://localhost:8080/cc/R01/signal/1");
+      }
+
+      function callRead() {
+        axios.get("http://localhost:8080/cc/R01/signals").then((response) => {
+          document.getElementById("circuit").textContent = JSON.stringify(
+            response.data,
+            null,
+            2
+          );
+        });
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </body>
+</html>
