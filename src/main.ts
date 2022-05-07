@@ -16,6 +16,7 @@ app.get("/cc/:id/signals", async (req, res) => {
     res.send({
       error: "Invalid ID. Must be RXX with X = 0-9",
     });
+    return;
   }
 
   const result = await factorio.getConstantCombinatorWithId(id.substring(1));
@@ -31,18 +32,69 @@ app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
     res.send({
       error: "Invalid ID. Must be RXX with X = 0-9",
     });
+    return;
   }
 
-  // TODO validate data
-
-  await factorio.setSignalToConstantCombinatorWithId(
-    id.substring(1),
-    parseInt(req.params.signalSlot),
-    req.body.signalType,
-    req.body.signalName,
-    req.body.signalCount
+  const signalSlotValidationResponse = validateSignalSlot(
+    req.params.signalSlot
   );
-  res.send("OK");
+  if (signalSlotValidationResponse.error) {
+    res.status(400);
+    res.send({
+      error: signalSlotValidationResponse.error,
+    });
+    return;
+  }
+
+  const signalType = <unknown>req.body.signalType;
+  const signalName = <unknown>req.body.signalName;
+  const signalCount = <unknown>req.body.signalCount;
+
+  if (
+    typeof signalType != "string" ||
+    typeof signalName != "string" ||
+    typeof signalCount != "string"
+  ) {
+    res.status(400);
+    res.send({
+      error:
+        "Body should contain these properties as string { 'signalName': 'iron-plate', 'signalType': 'item', 'signalCount': '1' }",
+    });
+    return;
+  }
+
+  if (!["item", "fluid", "virtual"].includes(signalType)) {
+    res.status(400);
+    res.send({
+      error: "signalType must be 'item', 'fluid', 'virtual'",
+    });
+    return;
+  }
+
+  const signalCountInt = parseInt(signalCount);
+  if (signalCountInt == NaN) {
+    res.status(400);
+    res.send({
+      error: "signalCount is no integer",
+    });
+    return;
+  }
+
+  const response = await factorio.setSignalToConstantCombinatorWithId(
+    id.substring(1),
+    signalSlotValidationResponse.slot!,
+    signalType,
+    signalName,
+    signalCountInt
+  );
+  if (response) {
+    res.status(400);
+    res.send({
+      error: "Error from factorio: " + response,
+    });
+    return;
+  }
+  res.send();
 });
 
 app.delete("/cc/:id/signal/:signalSlot", async (req, res) => {
@@ -53,15 +105,25 @@ app.delete("/cc/:id/signal/:signalSlot", async (req, res) => {
     res.send({
       error: "Invalid ID. Must be RXX with X = 0-9",
     });
+    return;
   }
 
-  // TODO validate data
+  const signalSlotValidationResponse = validateSignalSlot(
+    req.params.signalSlot
+  );
+  if (signalSlotValidationResponse.error) {
+    res.status(400);
+    res.send({
+      error: signalSlotValidationResponse.error,
+    });
+    return;
+  }
 
   await factorio.deleteSignalToConstantCombinatorWithId(
     id.substring(1),
-    parseInt(req.params.signalSlot)
+    signalSlotValidationResponse.slot!
   );
-  res.send("OK");
+  res.send();
 });
 
 app
@@ -69,3 +131,17 @@ app
     console.log(`Server listening at ${conf.server_port}`);
   })
   .on("error", (err) => console.error(err));
+
+function validateSignalSlot(slot: string): { error?: string; slot?: number } {
+  const slotInt = parseInt(slot);
+  if (slotInt == NaN) {
+    return { error: "Slot is no integer." };
+  }
+
+  if (slotInt <= 0 || slotInt > 17) {
+    return { error: "Slot must be between 1 and 17." };
+  }
+  return {
+    slot: slotInt,
+  };
+}
