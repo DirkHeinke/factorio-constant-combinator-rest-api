@@ -21,6 +21,12 @@ app.get("/cc/:id/signals", (req, res) => {
     res.send(err);
   });
 });
+app.get("/cc/:id/signal/:signalSlot", (req, res) => {
+  CcController.getSignalSlot(req, res).catch((err) => {
+    res.status(500);
+    res.send(err);
+  });
+});
 app.post("/cc/:id/signal/:signalSlot", (req, res) => {
   CcController.setSignalSlot(req, res).catch((err) => {
     res.status(500);

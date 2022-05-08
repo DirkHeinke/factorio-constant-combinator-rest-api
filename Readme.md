@@ -21,6 +21,8 @@ The constant combinators are identified by the signal R set in slot 20. In the i
 
 GET `/cc/:id/signals` - Get all signals of the circuit network connected to this combinator
 
+GET `/cc/:id/signal/:signalSlot` - Get `signalSlot`
+
 POST `/cc/:id/signal/:signalSlot` - Set `signalSlot`. Body must formatted like this
 
 ```

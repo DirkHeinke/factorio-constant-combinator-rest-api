@@ -8,7 +8,9 @@ type Signal = {
 };
 
 export class FactorioConnector {
-  static async getSignalsFromConstantCombinatorWithId(id: number): Promise<
+  static async getCircuitSignalsFromConstantCombinatorWithId(
+    id: number
+  ): Promise<
     | {
         error: true;
         data: string;
@@ -49,15 +51,58 @@ export class FactorioConnector {
         end
         `);
 
+    rcon.disconnect();
     if (result.startsWith("ERROR:")) {
       return { error: true, data: result };
     }
 
-    rcon.disconnect();
-
     return {
       error: false,
       data: this.parseSignalResponse(result),
+    };
+  }
+
+  static async getSignalFromConstantCombinatorWithId(
+    id: number,
+    slot: number
+  ): Promise<
+    | {
+        error: true;
+        data: string;
+      }
+    | {
+        error: false;
+        data: object;
+      }
+  > {
+    const rcon = new Rcon({
+      host: conf.rcon_host,
+      password: conf.rcon_password,
+      port: conf.rcon_port,
+    });
+    await rcon.connect();
+    const result = await rcon.send(`/sc 
+        ${this.getCcWithIdLuaFunction}
+        
+        local cc, doubleError = getCcWithId("${id}")
+
+        ${this.validateGetCcResponseLuaFunction}
+
+        local signalInSlot = cc.get_control_behavior().get_signal( ${slot} )
+        if (signalInSlot.signal == nil) then
+          rcon.print("ERROR: No Signal in slot")
+          return
+        end
+        rcon.print(signalInSlot.signal.name..","..signalInSlot.signal.type..","..signalInSlot.count)
+        `);
+    rcon.disconnect();
+    if (result.startsWith("ERROR:")) {
+      return { error: true, data: result };
+    }
+
+    return {
+      error: false,
+      data: this.signalLineToSignal(result),
     };
   }
 
@@ -129,16 +174,18 @@ export class FactorioConnector {
       return data
         .split("\n")
         .filter((line) => line.length > 0)
-        .flatMap((line) => {
-          const [signalName, signalType, signalCount] = line.split(",");
-          return {
-            signalName,
-            signalType,
-            signalCount,
-          };
-        });
+        .flatMap((line) => this.signalLineToSignal(line));
     }
     return [];
+  }
+
+  private static signalLineToSignal(data: string): Signal {
+    const [signalName, signalType, signalCount] = data.split(",");
+    return {
+      signalName,
+      signalType,
+      signalCount,
+    };
   }
 
   private static getCcWithIdLuaFunction = `

@@ -7,9 +7,36 @@ export async function getSignals(req: Request, res: Response) {
     return;
   }
 
-  const result = await FactorioConnector.getSignalsFromConstantCombinatorWithId(
-    id
+  const result =
+    await FactorioConnector.getCircuitSignalsFromConstantCombinatorWithId(id);
+  if (result.error) {
+    res.status(400);
+    res.send({
+      error: "Error from factorio: " + result.data,
+    });
+    return;
+  }
+
+  res.contentType("json");
+  res.send(result.data);
+}
+
+export async function getSignalSlot(req: Request, res: Response) {
+  const id = getIdFromRequest(req, res);
+  if (id == null) {
+    return;
+  }
+
+  const signalSlot = getSignalSlotFromRequest(req, res);
+  if (signalSlot == null) {
+    return;
+  }
+
+  const result = await FactorioConnector.getSignalFromConstantCombinatorWithId(
+    id,
+    signalSlot
   );
+
   if (result.error) {
     res.status(400);
     res.send({
