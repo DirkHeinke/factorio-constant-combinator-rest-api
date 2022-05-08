@@ -19,8 +19,8 @@ app.use(function (req, res, next) {
 
 app.get("/cc/:id/signals", async (req, res) => {
   const id = req.params.id;
-  const idIsValid = !isNaN(parseInt(id));
-  if (!idIsValid) {
+  const idInt = parseInt(id);
+  if (isNaN(idInt) || "" + idInt !== id) {
     res.status(400);
     res.send({
       error: "Invalid ID. Must be a number",
@@ -28,7 +28,7 @@ app.get("/cc/:id/signals", async (req, res) => {
     return;
   }
 
-  const result = await factorio.getSignalsFromConstantCombinatorWithId(id);
+  const result = await factorio.getSignalsFromConstantCombinatorWithId(idInt);
   if (result.error) {
     res.status(400);
     res.send({
@@ -42,8 +42,8 @@ app.get("/cc/:id/signals", async (req, res) => {
 
 app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
   const id = req.params.id;
-  const idIsValid = !isNaN(parseInt(id));
-  if (!idIsValid) {
+  const idInt = parseInt(id);
+  if (isNaN(idInt) || "" + idInt !== id) {
     res.status(400);
     res.send({
       error: "Invalid ID. Must be a number",
@@ -88,16 +88,16 @@ app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
   }
 
   const signalCountInt = parseInt(signalCount);
-  if (signalCountInt == NaN) {
+  if (isNaN(signalCountInt) || "" + signalCountInt !== signalCount) {
     res.status(400);
     res.send({
-      error: "signalCount is no integer",
+      error: "Invalid signalCount. Must be a number",
     });
     return;
   }
 
   const result = await factorio.setSignalToConstantCombinatorWithId(
-    id,
+    idInt,
     signalSlotValidationResponse.slot!,
     signalType,
     signalName,
@@ -115,8 +115,8 @@ app.post("/cc/:id/signal/:signalSlot", async (req, res) => {
 
 app.delete("/cc/:id/signal/:signalSlot", async (req, res) => {
   const id = req.params.id;
-  const idIsValid = !isNaN(parseInt(id));
-  if (!idIsValid) {
+  const idInt = parseInt(id);
+  if (isNaN(idInt) || "" + idInt !== id) {
     res.status(400);
     res.send({
       error: "Invalid ID. Must be a number",
@@ -136,7 +136,7 @@ app.delete("/cc/:id/signal/:signalSlot", async (req, res) => {
   }
 
   await factorio.deleteSignalToConstantCombinatorWithId(
-    id,
+    idInt,
     signalSlotValidationResponse.slot!
   );
   res.send();
@@ -150,12 +150,12 @@ app
 
 function validateSignalSlot(slot: string): { error?: string; slot?: number } {
   const slotInt = parseInt(slot);
-  if (isNaN(slotInt)) {
-    return { error: "Slot is no integer." };
+  if (isNaN(slotInt) || "" + slotInt !== slot) {
+    return { error: "Invalid Slot. Must be a number." };
   }
 
-  if (slotInt <= 0 || slotInt > 17) {
-    return { error: "Slot must be between 1 and 17." };
+  if (slotInt <= 0 || slotInt > 19) {
+    return { error: "Invalid Slot. Slot must be between 1 and 19." };
   }
   return {
     slot: slotInt,

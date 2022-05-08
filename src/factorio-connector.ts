@@ -8,22 +8,19 @@ type Signal = {
 };
 
 export class FactorioConnector {
-  private rcon: Rcon;
+  constructor() {}
 
-  constructor() {
-    this.rcon = new Rcon({
+  async getSignalsFromConstantCombinatorWithId(id: number): Promise<{
+    error: boolean;
+    data: string | object;
+  }> {
+    const rcon = new Rcon({
       host: conf.rcon_host,
       password: conf.rcon_password,
       port: conf.rcon_port,
     });
-  }
-
-  async getSignalsFromConstantCombinatorWithId(id: string): Promise<{
-    error: boolean;
-    data: string | object;
-  }> {
-    this.rcon.connect();
-    const result = await this.rcon.send(`/sc 
+    rcon.connect();
+    const result = await rcon.send(`/sc 
         ${this.getCcWithIdLuaFunction}
         
         local cc, doubleError = getCcWithId("${id}")
@@ -52,7 +49,7 @@ export class FactorioConnector {
       return { error: true, data: result };
     }
 
-    this.rcon.disconnect();
+    rcon.disconnect();
 
     return {
       error: false,
@@ -61,14 +58,19 @@ export class FactorioConnector {
   }
 
   async setSignalToConstantCombinatorWithId(
-    id: string,
+    id: number,
     slot: number,
     signalType: string,
     signalName: string,
     signalCount: number
   ) {
-    this.rcon.connect();
-    const result = await this.rcon.send(`/sc 
+    const rcon = new Rcon({
+      host: conf.rcon_host,
+      password: conf.rcon_password,
+      port: conf.rcon_port,
+    });
+    rcon.connect();
+    const result = await rcon.send(`/sc 
         ${this.getCcWithIdLuaFunction}
         
         local cc, doubleError = getCcWithId("${id}")
@@ -77,13 +79,18 @@ export class FactorioConnector {
 
         cc.get_control_behavior().set_signal(${slot},{signal={type="${signalType}", name="${signalName}"}, count=${signalCount}})
         `);
-    this.rcon.disconnect();
+    rcon.disconnect();
     return result;
   }
 
-  async deleteSignalToConstantCombinatorWithId(id: string, slot: number) {
-    this.rcon.connect();
-    const result = await this.rcon.send(`/sc 
+  async deleteSignalToConstantCombinatorWithId(id: number, slot: number) {
+    const rcon = new Rcon({
+      host: conf.rcon_host,
+      password: conf.rcon_password,
+      port: conf.rcon_port,
+    });
+    rcon.connect();
+    const result = await rcon.send(`/sc 
         ${this.getCcWithIdLuaFunction}
         
         local cc, doubleError = getCcWithId("${id}")
@@ -92,7 +99,7 @@ export class FactorioConnector {
         
         cc.get_control_behavior().set_signal(${slot},nil)
         `);
-    this.rcon.disconnect();
+    rcon.disconnect();
     return result;
   }
 
