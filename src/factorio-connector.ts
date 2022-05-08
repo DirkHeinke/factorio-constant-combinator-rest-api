@@ -8,18 +8,22 @@ type Signal = {
 };
 
 export class FactorioConnector {
-  constructor() {}
-
-  async getSignalsFromConstantCombinatorWithId(id: number): Promise<{
-    error: boolean;
-    data: string | object;
-  }> {
+  static async getSignalsFromConstantCombinatorWithId(id: number): Promise<
+    | {
+        error: true;
+        data: string;
+      }
+    | {
+        error: false;
+        data: object;
+      }
+  > {
     const rcon = new Rcon({
       host: conf.rcon_host,
       password: conf.rcon_password,
       port: conf.rcon_port,
     });
-    rcon.connect();
+    await rcon.connect();
     const result = await rcon.send(`/sc 
         ${this.getCcWithIdLuaFunction}
         
@@ -57,7 +61,7 @@ export class FactorioConnector {
     };
   }
 
-  async setSignalToConstantCombinatorWithId(
+  static async setSignalToConstantCombinatorWithId(
     id: number,
     slot: number,
     signalType: string,
@@ -69,7 +73,7 @@ export class FactorioConnector {
       password: conf.rcon_password,
       port: conf.rcon_port,
     });
-    rcon.connect();
+    await rcon.connect();
     const result = await rcon.send(`/sc 
         ${this.getCcWithIdLuaFunction}
         
@@ -83,13 +87,16 @@ export class FactorioConnector {
     return result;
   }
 
-  async deleteSignalToConstantCombinatorWithId(id: number, slot: number) {
+  static async deleteSignalToConstantCombinatorWithId(
+    id: number,
+    slot: number
+  ) {
     const rcon = new Rcon({
       host: conf.rcon_host,
       password: conf.rcon_password,
       port: conf.rcon_port,
     });
-    rcon.connect();
+    await rcon.connect();
     const result = await rcon.send(`/sc 
         ${this.getCcWithIdLuaFunction}
         
@@ -103,13 +110,13 @@ export class FactorioConnector {
     return result;
   }
 
-  private parseSignalResponse(data: string): {
+  private static parseSignalResponse(data: string): {
     red: Signal[];
     green: Signal[];
   } {
-    let [redData, greenData] = data.split("---");
-    let redSignals: Signal[] = this.stringToSignalArray(redData);
-    let greenSignals: Signal[] = this.stringToSignalArray(greenData);
+    const [redData, greenData] = data.split("---");
+    const redSignals: Signal[] = this.stringToSignalArray(redData);
+    const greenSignals: Signal[] = this.stringToSignalArray(greenData);
 
     return {
       green: greenSignals,
@@ -117,7 +124,7 @@ export class FactorioConnector {
     };
   }
 
-  private stringToSignalArray(data: string): Signal[] {
+  private static stringToSignalArray(data: string): Signal[] {
     if (data.length > 0) {
       return data
         .split("\n")
@@ -134,7 +141,7 @@ export class FactorioConnector {
     return [];
   }
 
-  private getCcWithIdLuaFunction = `
+  private static getCcWithIdLuaFunction = `
     function getCcWithId(id)
         local constantCombinators = game.surfaces[1].find_entities_filtered{type="constant-combinator"};
         local lastCcWithId;
@@ -157,7 +164,7 @@ export class FactorioConnector {
     end
     `;
 
-  private validateGetCcResponseLuaFunction = `
+  private static validateGetCcResponseLuaFunction = `
       if(doubleError) then
         rcon.print("ERROR: ID used in multiple combinators")
         return
